@@ -1,0 +1,14 @@
+#service to handle startup, shutdown message. copy to /etc/systemd/system/
+[Unit]
+Description=StovePI startup and shutdown messages
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+User=pi
+Group=pi
+ExecStart=/usr/bin/python3 /home/pi/stovepi/stovepi/lcd.py "STARTUP" 
+ExecStop=/usr/bin/python3 /home/pi/stovepi/stovepi/lcd.py "SHUTDOWN"
+
+[Install]
+WantedBy=multi-user.target
