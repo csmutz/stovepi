@@ -7,6 +7,7 @@ if used as script, print message supplied as first 2 args to screen (easy way to
 '''
 
 import time
+import datetime
 import board
 import digitalio
 import adafruit_character_lcd.character_lcd as characterlcd
@@ -31,7 +32,7 @@ lcd = None
 
 class lcd:
     
-    def __init__(self, char_weight=2):
+    def __init__(self, char_weight=3):
         self._lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
         self._lcd.clear()
         self._line1 = ""
@@ -39,7 +40,9 @@ class lcd:
         if (char_weight == 2 or char_weight == 3):
             self.char_weight = char_weight
         else:
-            char_weight = 2
+            char_weight = 3
+        self._define_large_chars()
+        
         
     def refresh(self, status, mode):
         '''
@@ -51,6 +54,60 @@ class lcd:
         self._line2 = str(line2)[0:16]
         self._refresh_lcd()
 
+
+    def format_large_chars(self, line1, line2, c):
+        if (c == "0"):
+            line1 += "\x00\x04\x01"
+            line2 += "\x00\x07\x01"
+        elif (c == "1"):
+            line1 += " \x01 "
+            line2 += " \x01 "
+        elif (c == "2"):
+            line1 += " \x03\x01"
+            line2 += "\x00\x06 "
+        elif (c == "3"):
+            line1 += " \x03\x01"
+            line2 += " \x06\x01"
+        elif (c == "4"):
+            line1 += "\x00\x02\x01"
+            line2 += " \x05\x01"
+        elif (c == "5"):
+            line1 += "\x00\x03 "
+            line2 += " \x06\x01"
+        elif (c == "6"):
+            line1 += "\x00\x03 "
+            line2 += "\x00\x06\x01"
+        elif (c == "7"):
+            line1 += " \x04\x01"
+            line2 += " \x00 "
+        elif (c == "8"):
+            line1 += "\x00\x03\x01"
+            line2 += "\x00\x06\x01"
+        elif (c == "9"):
+            line1 += "\x00\x03\x01"
+            line2 += " \x05\x01"
+        else:
+            line1 += "   "
+            line2 += "   "
+        return line1, line2
+
+    def output_temp(self, log):
+        line1 = ""
+        line2 = ""
+        temp = "%3s" % str(log['stove'])
+        for c in temp:
+            line1, line2 = self.format_large_chars(line1, line2, c)
+        
+        line1 += "F "
+        line1 += log['date'][11:16]
+        
+        if log['stove_fan']:
+            line2 += " ON"
+        else:
+            line2 += " off"
+        self.output(line1, line2)
+        
+    
     def _refresh_lcd(self):
         self._lcd.clear()
         self._lcd.message = self._line1 + "\n" + self._line2
@@ -105,8 +162,8 @@ class lcd:
             #bottom, both
             self._lcd.create_char(6,b'\x1f\x00\x00\x00\x00\x1f\x1f\x1f')
         
-            #degrees
-            self._lcd.create_char(7,b'\x1f\x1f\x1b\x1f\x1f\x00\x00\x00')
+            #bottom, bottom only
+            self._lcd.create_char(7,b'\x00\x00\x00\x00\x00\x1f\x1f\x1f')
 
 
 def main():
@@ -121,6 +178,13 @@ def main():
         elif sys.argv[1] == "SHUTDOWN":
             #lcd.message = "Shutting down...\nUnplug in 1 min"
             d.output("Shutting down...", "Unplug in 1 min")
+        elif sys.argv[1] == "TEMP":
+            l = {}
+            l['stove'] = int(sys.argv[2])
+            l['stove_fan'] = True
+            l['date'] = datetime.datetime.now().isoformat()
+            d.output_temp(l)
+            
         else:
             #lcd.message = "\n".join(sys.argv[1:3])
             if len(sys.argv) > 2:
@@ -129,16 +193,6 @@ def main():
                 d.output(sys.argv[1])
     else:
         d.output("Hello World!")
-    
-    
-    
-    
-    
-    #lcd.clear()    
-    #482
-    #lcd.message = "\x00\x02\x01\x00\x03\x01 \x03\x01\x07\x00\x03\n \x05\x01\x00\x06\x01\x00\x06  \x00\x05"
-    #517
-    #lcd.message = " \x00 \x00\x03  \x04\x01\x07\x00\x03\n \x00  \x06\x01 \x00  \x00\x05"
     
     
 if __name__ == "__main__":

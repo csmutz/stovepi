@@ -3,6 +3,9 @@
 module to handle dallas temp (DS18B20) sensors using 1 wire protocol
 
 if used as script, prints all the dallas sensors
+
+#TODO: implement retries on temp reads
+
 '''
 
 import sys
@@ -10,6 +13,7 @@ import os
 import re
 import logging
 import glob
+import traceback
 
 DEVICE_PREFIX="/sys/bus/w1/devices/"
 DEVICE_POSTFIX="/w1_slave"
@@ -59,13 +63,13 @@ class dallas_temp:
                             return int(int(match.group(1)) * 9 / 5 / 1000 + 32)
                         else:
                             #error reading temp
-                            logging.error("Error Reading Dallas Temperature: error parsing temperature for sensor %s" % (sensor_name, sensor_id))
+                            logging.error("Error Reading Dallas Temperature: error parsing temperature for sensor %s:%s" % (sensor_name, sensor_id))
                     else:
                         #log error, invalid data from sensora
-                        logging.error("Error Reading Dallas Temperature: invalid data from sensor %s" % (sensor_name, sensor_id))
+                        logging.error("Error Reading Dallas Temperature: invalid data from sensor %s:%s" % (sensor_name, sensor_id))
                 else:
                     #log error reading file, invalid number of files
-                    logging.error("Error Reading Dallas Temperature: unexpected number lines in file for sensor %s" % (sensor_name, sensor_id))
+                    logging.error("Error Reading Dallas Temperature: unexpected number lines in file for sensor %s:%s" % (sensor_name, sensor_id))
         except Exception as e:
             logging.error(traceback.format_exc())
 
