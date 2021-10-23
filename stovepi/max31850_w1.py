@@ -22,6 +22,10 @@ TEMP_SANITY_CHECK_MAX = 1200
 NUM_RETRIES = 30
 RETRY_WAIT = 1
 
+#Number of decimal digits to round to, set to 0 to round to nearest integeter temp
+#also forced to int because resolution of thermocouple is above 1 degree F
+TEMP_RESOLUTION = 0
+
 
 '''
 cat /sys/bus/w1/devices/3b-0d800cc77eec/w1_slave
@@ -30,7 +34,7 @@ cat /sys/bus/w1/devices/3b-0d800cc77eec/w1_slave
 '''
 
 def CtoF(degreesC):
-    return int(degreesC * 9 / 5) + 32
+    return int(round(degreesC * 9 / 5 + 32, TEMP_RESOLUTION))
        
 DEVICE_TYPE_MAX31850 = "3b-"
 DEVICE_TYPE_DS18B20 = "28-"

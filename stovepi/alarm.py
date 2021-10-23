@@ -12,8 +12,8 @@ GPIO.setmode(GPIO.BCM)
 PIN_PWM = 18
 PWM_FREQ = 10000
 
-BEEP_DUTY = 1
-BEEP_LEN = .001
+BEEP_DUTY = 5
+BEEP_LEN = .1
 ALARM_DUTY = 100
 
 class alarm:
@@ -29,7 +29,7 @@ class alarm:
         self.pwm.stop()
         
     def beep(self):
-        self.pwm.start(ALARM_DUTY)
+        self.pwm.start(BEEP_DUTY)
         time.sleep(BEEP_LEN)
         self.pwm.stop()
 
@@ -38,7 +38,7 @@ def main():
     a = alarm()
     time.sleep(10)
     a.beep()
-
+    
 
 if __name__ == "__main__":
     # execute only if run as a script

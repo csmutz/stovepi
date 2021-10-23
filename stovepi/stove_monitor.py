@@ -5,12 +5,11 @@ main monitor script
 
 TODO: 
 -general retry, exception catching 
--logging to file
--button to temporarily stop fans
--pwm control of fans
--long term logging, system syslog
+-error logging to file
 -alarm on thresholds for temp, air_quality
--buttons, menu system, modes
+-button to display more temps?
+
+-long term logging, system syslog
 
 '''
 
@@ -27,9 +26,11 @@ import dallas_temp
 import max31850_w1
 import firmduino
 import lcd
+import buttons
+import alarm
 
-
-POLL_INTERVAL = 60
+#main loop interval, in min
+POLL_INTERVAL = 1
 THERMOCOUPLE_DEV = "3b-0d800cc77eec"
 
 LOGFILE_CURRENT = "/dev/shm/stovepi_current.json"
@@ -39,26 +40,47 @@ LOGFILE_ERRORS = "/dev/shm/stovepi_errors.json"
 
 LOG_HISTORY_DAYS = .5
 
-TEMP_FAN_ON = 450
-TEMP_FAN_OFF = 350
-STOVE_FAN_ON = True
-
 
 log_history = deque(maxlen=int(60*60*24*LOG_HISTORY_DAYS/POLL_INTERVAL))
 
 
-def write_log(log):
-    log_json = json.dumps(log)
+def format_log(state):
+    log = {}
+    
+    log['fan_pause'] = state.fan_pause
+    log['air_quality'] = state.air_quality
+    log['stove'] = state.stove
+    log['board'] = state.board
+
+    log['ceiling'] = state.ceiling
+    log['vent'] = state.vent
+    log['stovepi'] = state.stovepi
+    log['upstairs'] = state.upstairs
+    log['downstairs'] = state.downstairs
+    log['hvac'] = state.hvac
+    
+    log['stove_fan'] = state.stove_fan
+    log['fan_pause'] = state.fan_pause
+    log['date'] = state.date
+
+    log['fan_house'] = state.fan_house
+    log['fan_bedroom'] = state.fan_bedroom
+
+    log_history.append(log)
+    
+    return json.dumps(log)
+    
+
+
+def write_log(state):
+    log_json = format_log(state)
     
     with open(LOGFILE_CURRENT,"w") as f:
         f.write(log_json)    
     
-    log_history.append(log)
-        
-    with open(LOGFILE_HISTORY,"w") as f:
-        for r in log_history:
-            f.write(log_json)
-            f.write("\n")
+    with open(LOGFILE_HISTORY,"a") as f:
+        f.write(log_json)
+        f.write("\n")
 
     with open(LOGFILE_HISTORY_CSV,"w") as outfile:
         fieldnames = ['date','stove_temp']
@@ -74,60 +96,84 @@ def write_log(log):
 
 
 '''
-Turning the relay on turns off the stove fan
-
+global state
 '''
-def control_fans(log, fduino):
-    global STOVE_FAN_ON
-    if log['stove'] > 0:
-        if log['stove'] > TEMP_FAN_ON:
-            fduino.set_relay1(False)
-            STOVE_FAN_ON = True
-        if log['stove'] < TEMP_FAN_OFF:
-            fduino.set_relay1(True)
-            STOVE_FAN_ON = False
-    else:
-        logging.error("Stove temp of %i invalid, setting fan to on" % (log['stove']))
-        fduino.set_relay1(False)
-        STOVE_FAN_ON = True
+class global_state:
+    def __init__(self):
+        #minutes to disable fans
+        self.fan_pause = 0
+        self.air_quality = None
+        self.stove = None
+        self.board = None
         
-    log['stove_fan'] = STOVE_FAN_ON
-    
+        self.ceiling = None
+        self.vent = None
+        self.stovepi = None
+        self.upstairs = None
+        self.downstairs = None
+        self.hvac = None
+        
+        self.stove_fan = True
+        self.fan_pause = 0
+        
+        self.alarm_pause = 0
+        
+        self.fan_house = "off"
+        self.fan_bedroom = "off"
+        
+        self.date = None
+   
+       
 
 def main():
     last_poll = int(time.time())
     
     
     #initialize objects
+    state = global_state()
     dt = dallas_temp.dallas_temp()
     thermocouple = max31850_w1.max_31850_w1(device=THERMOCOUPLE_DEV)
-    fduino = firmduino.firmduino()
-    display = lcd.lcd()
-    
+    fduino = firmduino.firmduino(state)
+    display = lcd.lcd(state)
+    al = alarm.alarm()
+    bt = buttons.buttons(state, display, al, fduino)
         
     while True:
         
-        log = {}
+        #move this to dt object?
+        state.ceiling = dt.get_temp("ceiling")
+        state.upstairs = dt.get_temp("upstairs")
+        state.stovepi = dt.get_temp("stovepi")
+        state.downstairs = dt.get_temp("downstairs")
+        state.hvac = dt.get_temp("hvac")
+        state.vent = dt.get_temp("vent")
                 
-        for s in dallas_temp.sensors:
-            log[s] = dt.get_temp(s)
-        
-        log['air_quality'] = fduino.read_analog()
-        
-        
+        state.air_quality = fduino.read_analog()
+                        
         thermocouple.get_data()
-        log['stove'] = thermocouple.get_temp_sensor()
-        log['board'] = thermocouple.get_temp_board()
+        state.stove = thermocouple.get_temp_sensor()
+        state.board = thermocouple.get_temp_board()
+                
+        #date is date of last thermocouple update
+        state.date = datetime.datetime.now().isoformat()
+                
+        fduino.update_fans()
+                        
+        display.output_temp()
+        write_log(state)
         
-        control_fans(log, fduino)
+        if state.fan_pause > 0:
+            state.fan_pause -= POLL_INTERVAL
+        if state.fan_pause < 0:
+            state.fan_pause = 0
         
-        log['date'] = datetime.datetime.now().isoformat()
+        if state.alarm_pause > 0:
+            state.alarm_pause -= POLL_INTERVAL
+        if state.alarm_pause < 0:
+            state.alarm_pause = 0
         
-        display.output_temp(log)
-        write_log(log)
-        
-        time.sleep(last_poll + POLL_INTERVAL - time.time())
-        last_poll = last_poll + POLL_INTERVAL
+        time.sleep(last_poll + POLL_INTERVAL * 60 - time.time())
+        last_poll = last_poll + POLL_INTERVAL * 60
 
     
     

@@ -32,7 +32,8 @@ lcd = None
 
 class lcd:
     
-    def __init__(self, char_weight=3):
+    def __init__(self, state, char_weight=3):
+        self.state = state
         self._lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
         self._lcd.clear()
         self._line1 = ""
@@ -91,20 +92,28 @@ class lcd:
             line2 += "   "
         return line1, line2
 
-    def output_temp(self, log):
+    def output_temp(self):
         line1 = ""
         line2 = ""
-        temp = "%3s" % str(log['stove'])
+        temp = "%3s" % str(self.state.stove)
         for c in temp:
             line1, line2 = self.format_large_chars(line1, line2, c)
         
         line1 += "F "
-        line1 += log['date'][11:16]
+        line1 += self.state.date[11:16]
         
-        if log['stove_fan']:
-            line2 += " ON"
+        
+        
+        if self.state.stove_fan:
+            line2 += " ON "
         else:
-            line2 += " off"
+            if self.state.fan_pause > 0:
+                line2 += " P%02i" % (self.state.fan_pause)
+            else:
+                line2 += " off"
+            
+        line2 += "%3s" % self.state.stovepi
+        
         self.output(line1, line2)
         
     

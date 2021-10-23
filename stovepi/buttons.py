@@ -16,9 +16,18 @@ PIN_BUTTON3 = 25
 
 DEBOUNCE_TIME = 250
 
+FAN_PAUSE_MIN = 2
+ALARM_PAUSE_MIN = 30
+
 class buttons:
     
-    def __init__(self):
+    def __init__(self, state, display, alarm, fduino):
+        
+        self.state = state
+        self.display = display
+        self.alarm = alarm
+        self.fduino = fduino
+        
         GPIO.setup(PIN_BUTTON1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(PIN_BUTTON1, GPIO.FALLING, callback=self.button_action, bouncetime=DEBOUNCE_TIME)
         
@@ -42,13 +51,19 @@ class buttons:
                 
     
     def button1_action(self):
-        print("button press: 1")
+        self.state.fan_pause += FAN_PAUSE_MIN
+        self.fduino.update_fans()
+        self.display.output_temp()
+        
     
     def button2_action(self):
-        print("button press: 2")
+        self.state.alarm_pause += ALARM_PAUSE_MIN
+        self.self.alarm.alarm_stop()
+        
         
     def button3_action(self):
-        print("button press: 3")
+        #reset, switch mode?
+        pass
         
     def _filter_false_presses(self, pin):
         i = 0
