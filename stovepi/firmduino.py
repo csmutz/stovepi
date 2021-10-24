@@ -105,7 +105,10 @@ class firmduino:
     update fan control
     '''
     def update_fans(self):
-        if self.state.stove > 0:
+        if self.state.fan_pause > 0:
+            self.set_relay1(True)
+            self.state.stove_fan = False
+        elif self.state.stove > 0:
             if self.state.stove > TEMP_STOVE_FAN_ON:
                 self.set_relay1(False)
                 self.state.stove_fan = True
@@ -145,9 +148,7 @@ def main():
     print("settings pwm2 to %f" % (PWM2_LOW))
     fduino.set_pwm2(PWM2_LOW)
         
-    
-    time.sleep(30)
-
+    #time.sleep(30)
 
     print("analog value: %f" % fduino.read_analog())
 

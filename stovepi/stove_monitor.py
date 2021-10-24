@@ -4,12 +4,11 @@ main monitor script
 
 
 TODO: 
--general retry, exception catching 
--error logging to file
--alarm on thresholds for temp, air_quality
--button to display more temps?
-
--long term logging, system syslog
+  -general retry, exception catching 
+  -error logging to file
+  -alarm on thresholds for temp, air_quality
+  -button to display more temps?
+  -long term logging, system syslog
 
 '''
 
@@ -40,7 +39,6 @@ LOGFILE_ERRORS = "/dev/shm/stovepi_errors.json"
 
 LOG_HISTORY_DAYS = .5
 
-
 log_history = deque(maxlen=int(60*60*24*LOG_HISTORY_DAYS/POLL_INTERVAL))
 
 
@@ -62,6 +60,8 @@ def format_log(state):
     log['stove_fan'] = state.stove_fan
     log['fan_pause'] = state.fan_pause
     log['date'] = state.date
+
+    log['alarm'] = state.alarm
 
     log['fan_house'] = state.fan_house
     log['fan_bedroom'] = state.fan_bedroom
@@ -117,6 +117,7 @@ class global_state:
         self.fan_pause = 0
         
         self.alarm_pause = 0
+        self.alarm = False
         
         self.fan_house = "off"
         self.fan_bedroom = "off"
@@ -135,7 +136,7 @@ def main():
     thermocouple = max31850_w1.max_31850_w1(device=THERMOCOUPLE_DEV)
     fduino = firmduino.firmduino(state)
     display = lcd.lcd(state)
-    al = alarm.alarm()
+    al = alarm.alarm(state)
     bt = buttons.buttons(state, display, al, fduino)
         
     while True:

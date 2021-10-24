@@ -16,17 +16,31 @@ BEEP_DUTY = 5
 BEEP_LEN = .1
 ALARM_DUTY = 100
 
+TEMP_ALARM_THRESHOLD = 700
+
 class alarm:
     
-    def __init__(self):
+    def __init__(self, state):
+        self.state = state
         GPIO.setup(PIN_PWM, GPIO.OUT)
         self.pwm = GPIO.PWM(PIN_PWM, PWM_FREQ)
         
+    def update_alarm():
+        if self.state.stove > TEMP_ALARM_THRESHOLD:
+            if self.state.alarm_pause > 0:
+                self.alarm_stop()
+            else:
+                self.alarm_start()
+        else:
+            self.alarm_stop()
+    
     def alarm_start(self):
         self.pwm.start(ALARM_DUTY)
+        self.state.alarm = True
     
     def alarm_stop(self):
         self.pwm.stop()
+        self.state.alarm = False
         
     def beep(self):
         self.pwm.start(BEEP_DUTY)
