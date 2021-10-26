@@ -6,9 +6,10 @@ main monitor script
 TODO: 
   -general retry, exception catching 
   -error logging to file
-  -alarm on thresholds for temp, air_quality
+  -alarm on thresholds air_quality
   -button to display more temps?
   -long term logging, system syslog
+  -startup, restart scripts
 
 '''
 
@@ -27,6 +28,9 @@ import firmduino
 import lcd
 import buttons
 import alarm
+
+import logging
+import logging.handlers
 
 #main loop interval, in min
 POLL_INTERVAL = 1
@@ -127,6 +131,17 @@ class global_state:
        
 
 def main():
+    logger = logging.getLogger('stovepi')
+    logger.setLevel(logging.WARNING)
+    handler = logging.handlers.SysLogHandler(address = '/dev/log')
+    formatter = logging.Formatter('%(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+        
+    logger.warning("Starting StovePI")
+    
+    
+    
     last_poll = int(time.time())
     
     

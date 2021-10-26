@@ -14,6 +14,7 @@ import adafruit_character_lcd.character_lcd as characterlcd
 import sys
 import os
 import subprocess
+import logging
 
 lcd_rs = digitalio.DigitalInOut(board.D16)
 lcd_en = digitalio.DigitalInOut(board.D12)
@@ -34,6 +35,7 @@ class lcd:
     
     def __init__(self, state, char_weight=3):
         self.state = state
+        self.logger = logging.getLogger('stovepi')
         self._lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
         self._lcd.clear()
         self._line1 = ""

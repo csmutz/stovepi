@@ -12,6 +12,7 @@ Turning Stove relay fan on results in fan being shut off (default on)
 '''
 import pyfirmata
 import time
+import logging
 
 FIRMATA_DEV = '/dev/ttyUSB0'
 
@@ -43,6 +44,8 @@ class firmduino:
     def __init__(self, state, dev=FIRMATA_DEV):
         self.state = state
         self.dev = dev
+        self.logger = logging.getLogger('stovepi')
+        
         self.board = pyfirmata.Arduino(self.dev)
         
         #required for analog inputs
@@ -116,7 +119,7 @@ class firmduino:
                 self.set_relay1(True)
                 self.state.stove_fan = False
         else:
-            logging.error("Stove temp of %i invalid, setting fan to on" % (log['stove']))
+            self.logger.error("Stove temp of %i invalid, setting fan to on" % (log['stove']))
             self.set_relay1(False)
             self.state.stove_fan = True
         

@@ -51,6 +51,7 @@ class max_31850_w1:
     def __init__(self, device):
         self.device_id = device
         self.device_path = DEVICE_PREFIX + self.device_id + DEVICE_POSTFIX
+        self.logger = logging.getLogger('stovepi')
         
     def _reset_data(self):
         self.board_temp = -1
@@ -59,7 +60,7 @@ class max_31850_w1:
     def _temp_sanity_check(self):
         if (self.sensor_temp < TEMP_SANITY_CHECK_MIN) or (self.sensor_temp > TEMP_SANITY_CHECK_MAX):
             self._reset_data()
-            logging.error("Error Reading Thermocouple: temperature %i out of range (%i,%i)" % (temp, TEMP_SANITY_CHECK_MIN, TEMP_SANITY_CHECK_MAX))
+            self.logger.error("Error Reading Thermocouple: temperature %i out of range (%i,%i)" % (temp, TEMP_SANITY_CHECK_MIN, TEMP_SANITY_CHECK_MAX))
     
     def get_temp_sensor(self):
         return self.sensor_temp
@@ -100,25 +101,25 @@ class max_31850_w1:
                                 if flags > 0:
                                     self._reset_data()
                                     if (flags & 1) == 1:
-                                        logging.error("Error Reading Thermocouple: Open Circuit for thermocouple %s" % (self.device_id))
+                                        self.logger.error("Error Reading Thermocouple: Open Circuit for thermocouple %s" % (self.device_id))
                                     if (flags & 2) == 2:
-                                        logging.error("Error Reading Thermocouple: Short to GND for thermocouple %s" % (self.device_id))
+                                        self.logger.error("Error Reading Thermocouple: Short to GND for thermocouple %s" % (self.device_id))
                                     if (flags & 4) == 4:
-                                        logging.error("Error Reading Thermocouple: Short to VDD for thermocouple %s" % (self.device_id))
+                                        self.logger.error("Error Reading Thermocouple: Short to VDD for thermocouple %s" % (self.device_id))
                             else:
                                 #error reading temp
-                                logging.error("Error Reading Thermocouple: error parsing temperature for thermocouple %s" % (self.device_id))
+                                self.logger.error("Error Reading Thermocouple: error parsing temperature for thermocouple %s" % (self.device_id))
                                 self._reset_data()
                         else:
                             #log error, invalid data from sensora
-                            logging.error("Error Reading Thermocouple: invalid data from thermocouple %s" % (self.device_id))
+                            self.logger.error("Error Reading Thermocouple: invalid data from thermocouple %s" % (self.device_id))
                             self._reset_data()
                     else:
                         #log error reading file, invalid number of files
-                        logging.error("Error Reading Thermocouple: unexpected number lines in file for thermocouple %s" % (self.device_id))
+                        self.logger.error("Error Reading Thermocouple: unexpected number lines in file for thermocouple %s" % (self.device_id))
                         self._reset_data()
             except Exception as e:
-                logging.error(traceback.format_exc())
+                self.logger.error(traceback.format_exc())
                 self._reset_data()
 
             if (self.sensor_temp != -1):
