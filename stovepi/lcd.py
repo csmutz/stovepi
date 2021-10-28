@@ -35,17 +35,21 @@ class lcd:
     
     def __init__(self, state, char_weight=3):
         self.state = state
-        self.logger = logging.getLogger('stovepi')
-        self._lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
-        self._lcd.clear()
         self._line1 = ""
         self._line2 = ""
+        self.logger = logging.getLogger('stovepi')
         if (char_weight == 2 or char_weight == 3):
             self.char_weight = char_weight
         else:
-            char_weight = 3
-        self._define_large_chars()
+            self.char_weight = 3
         
+        self._reset()
+        self._lcd.clear()
+    
+
+    def _reset(self):
+        self._lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
+        self._define_large_chars()
         
     def refresh(self, status, mode):
         '''
@@ -120,6 +124,7 @@ class lcd:
         
     
     def _refresh_lcd(self):
+        self._reset()
         self._lcd.clear()
         self._lcd.message = self._line1 + "\n" + self._line2
     

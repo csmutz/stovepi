@@ -23,18 +23,24 @@ RELAY2_PIN = 8
 PWM1_PIN = 5
 PWM2_PIN = 3
 
-PWM1_OFF = 0
-PWM1_LOW = .2
-PWM1_MED = .4
-PWM1_HIGH = .6
-
+#house
 PWM2_OFF = 0
-PWM2_LOW = .08
-PWM2_MED = .16
-PWM2_HIGH = .24
+PWM2_LOW = .15
+PWM2_MED = .3
+PWM2_HIGH = .45
 
-TEMP_STOVE_FAN_ON = 450
-TEMP_STOVE_FAN_OFF = 350
+#bedroom
+PWM1_OFF = 0
+PWM1_LOW = 0
+PWM1_MED = .08
+PWM1_HIGH = .16
+#PWM2_HIGH = .24
+
+TEMP_STOVE_FAN_ON = 475
+TEMP_STOVE_FAN_OFF = 375
+TEMP_FANS_ON_LOW = 300
+TEMP_FANS_ON_MED = 400
+TEMP_FANS_ON_HIGH = 550
 
 
 ANALOG_PIN = 4
@@ -83,12 +89,14 @@ class firmduino:
     '''
     def set_pwm1(self, level):
         self.board.digital[PWM1_PIN].write(level)
+        self.state.fan_bedroom = level
     
     '''
     house
     '''
     def set_pwm2(self, level):
         self.board.digital[PWM2_PIN].write(level)
+        self.state.fan_house = level
     
     def set_relay1(self, value):
         if value:
@@ -124,26 +132,30 @@ class firmduino:
             self.state.stove_fan = True
         
         
-        if self.state.stove > TEMP_STOVE_FAN_OFF:
-            if self.state.stove > TEMP_STOVE_FAN_ON:
-                self.set_pwm1(PWM1_MED)
-                self.set_pwm2(PWM2_MED)
+        
+        if self.state.fan_pause > 0:
+            self.set_pwm1(PWM1_OFF)
+            self.set_pwm2(PWM2_OFF)
+        else:
+            if self.state.stove > TEMP_FANS_ON_LOW:
+                if self.state.stove > TEMP_FANS_ON_MED:
+                    if self.state.stove > TEMP_FANS_ON_HIGH:
+                        self.set_pwm1(PWM1_HIGH)
+                        self.set_pwm2(PWM2_HIGH)
+                    else:
+                        self.set_pwm1(PWM1_MED)
+                        self.set_pwm2(PWM2_MED)
+                else:
+                    self.set_pwm1(PWM1_LOW)
+                    self.set_pwm2(PWM2_LOW)
             else:
-                self.set_pwm1(PWM1_LOW)
-                self.set_pwm2(PWM2_LOW)
+                self.set_pwm1(PWM1_OFF)
+                self.set_pwm2(PWM2_OFF)
+        
        
         
 def main():
     fduino = firmduino(None)
-    
-    #print("turning on relay")
-    #fduino.set_relay1(True)
-    #time.sleep(3)
-    
-    #print("turning off relay")
-    #fduino.set_relay1(False)
-        
-    #fduino.disable_relays()
     
     print("settings pwm1 to %f" % (PWM1_LOW))
     fduino.set_pwm1(PWM1_LOW)
