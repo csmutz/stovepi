@@ -36,11 +36,12 @@ PWM1_MED = .08
 PWM1_HIGH = .16
 #PWM2_HIGH = .24
 
-TEMP_STOVE_FAN_ON = 475
-TEMP_STOVE_FAN_OFF = 375
+TEMP_STOVE_FAN_ON = 450
+TEMP_STOVE_FAN_OFF = 350
 TEMP_FANS_ON_LOW = 300
 TEMP_FANS_ON_MED = 400
-TEMP_FANS_ON_HIGH = 550
+TEMP_FANS_ON_HIGH = 600
+
 
 
 ANALOG_PIN = 4
@@ -58,31 +59,27 @@ class firmduino:
         self.it = pyfirmata.util.Iterator(self.board)
         self.it.start()
         
-        #shut off relays, power up board
-        self.board.digital[RELAY1_PIN].write(1)
-        #disabled to save a small amount of power
-        #self.board.digital[RELAY2_PIN].write(1)
+        self.enable_relays()
         
-        time.sleep(1)
-        self.board.digital[RELAY_POWER_PIN].write(1)
-    
-    
         self.board.digital[PWM1_PIN].mode = pyfirmata.PWM
         self.board.digital[PWM1_PIN].write(PWM1_OFF)
     
         self.board.digital[PWM2_PIN].mode = pyfirmata.PWM
         self.board.digital[PWM2_PIN].write(PWM2_OFF)
-        
-        
-        #wait to enable reads
-        #time.sleep(1)
+                
         self.board.analog[ANALOG_PIN].enable_reporting()
 
     
     def disable_relays(self):
+        self.set_relay1(False)
+        self.set_relay2(False)
         self.board.digital[RELAY_POWER_PIN].write(0)
     
     def enable_relays(self):
+        #set relays to default (off)
+        self.set_relay1(False)
+        self.set_relay2(False)
+        time.sleep(1)
         self.board.digital[RELAY_POWER_PIN].write(1)
     '''
     bedroom
@@ -98,11 +95,24 @@ class firmduino:
         self.board.digital[PWM2_PIN].write(level)
         self.state.fan_house = level
     
+    '''
+    controlled speed stove fan, enabling relay disables fan
+    '''
     def set_relay1(self, value):
         if value:
             self.board.digital[RELAY1_PIN].write(0)
         else:
             self.board.digital[RELAY1_PIN].write(1)
+    
+    '''
+    full speed stove fan, enabling relay enables fan
+    '''
+    def set_relay2(self, value):
+        #make sure relay1 is set high?
+        if value:
+            self.board.digital[RELAY2_PIN].write(0)
+        else:
+            self.board.digital[RELAY2_PIN].write(1)
     
     def read_analog(self):
         return self.board.analog[ANALOG_PIN].read()
@@ -110,7 +120,7 @@ class firmduino:
     def __del__(self):
         print("firmduino destructor: disabling relays")
         self.disable_relays()
-        self.board.digital[RELAY1_PIN].write(1)
+        
     
     '''
     update fan control
@@ -157,13 +167,19 @@ class firmduino:
 def main():
     fduino = firmduino(None)
     
-    print("settings pwm1 to %f" % (PWM1_LOW))
-    fduino.set_pwm1(PWM1_LOW)
-    
-    print("settings pwm2 to %f" % (PWM2_LOW))
-    fduino.set_pwm2(PWM2_LOW)
+    r1 = True
+    r2 = True
+    fduino.set_relay1(r1)
+    fduino.set_relay2(r2)
+    print("relay r1: %s, r2: %s" % (r1,r2))
         
-    #time.sleep(30)
+    #print("settings pwm1 to %f" % (PWM1_LOW))
+    #fduino.set_pwm1(PWM1_LOW)
+    
+    #print("settings pwm2 to %f" % (PWM2_LOW))
+    #fduino.set_pwm2(PWM2_LOW)
+        
+    time.sleep(30)
 
     print("analog value: %f" % fduino.read_analog())
 

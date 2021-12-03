@@ -43,7 +43,8 @@ LOGFILE_ERRORS = "/dev/shm/stovepi_errors.json"
 
 LOG_HISTORY_DAYS = .5
 
-log_history = deque(maxlen=int(60*60*24*LOG_HISTORY_DAYS/POLL_INTERVAL))
+
+log_history = deque(maxlen=int(60*24*LOG_HISTORY_DAYS/POLL_INTERVAL))
 
 
 def format_log(state):
