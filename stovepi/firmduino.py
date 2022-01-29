@@ -32,13 +32,15 @@ PWM2_HIGH = .45
 #bedroom
 PWM1_OFF = 0
 PWM1_LOW = 0
-PWM1_MED = .08
-PWM1_HIGH = .16
+PWM1_MED = .1
+PWM1_HIGH = .2
 #PWM2_HIGH = .24
 
-TEMP_STOVE_FAN_ON = 450
-TEMP_STOVE_FAN_OFF = 350
-TEMP_FANS_ON_LOW = 300
+TEMP_STOVE_FAN_ON = 460
+TEMP_STOVE_FAN_OFF = 400
+TEMP_STOVE_FAN_ON_HIGH = 500
+
+TEMP_FANS_ON_LOW = 0
 TEMP_FANS_ON_MED = 400
 TEMP_FANS_ON_HIGH = 600
 
@@ -97,6 +99,7 @@ class firmduino:
     
     '''
     controlled speed stove fan, enabling relay disables fan
+    relays are low enabled
     '''
     def set_relay1(self, value):
         if value:
@@ -106,9 +109,10 @@ class firmduino:
     
     '''
     full speed stove fan, enabling relay enables fan
+    relays are low enabled
     '''
     def set_relay2(self, value):
-        #make sure relay1 is set high?
+        #make sure relay1 disabled?
         if value:
             self.board.digital[RELAY2_PIN].write(0)
         else:
@@ -120,25 +124,41 @@ class firmduino:
     def __del__(self):
         print("firmduino destructor: disabling relays")
         self.disable_relays()
-        
+    
+
+    def set_fans_off(self):
+        self.set_relay1(True)
+        self.set_relay2(False)
+        self.state.stove_fan = False
     
     '''
     update fan control
     '''
     def update_fans(self):
         if self.state.fan_pause > 0:
-            self.set_relay1(True)
-            self.state.stove_fan = False
+            #off
+            self.set_fans_off()
         elif self.state.stove > 0:
             if self.state.stove > TEMP_STOVE_FAN_ON:
-                self.set_relay1(False)
-                self.state.stove_fan = True
+                if self.state.stove > TEMP_STOVE_FAN_ON_HIGH:
+                    #High Temp
+                    self.set_relay1(True)
+                    self.set_relay2(True)
+                    self.state.stove_fan = True
+                else:
+                    #Med Temp
+                    self.set_relay1(False)
+                    self.set_relay2(False)
+                    self.state.stove_fan = True
             if self.state.stove < TEMP_STOVE_FAN_OFF:
+                #Low Temp
                 self.set_relay1(True)
+                self.set_relay2(False)
                 self.state.stove_fan = False
         else:
-            self.logger.error("Stove temp of %i invalid, setting fan to on" % (log['stove']))
-            self.set_relay1(False)
+            self.logger.error("Stove temp of %i invalid, setting fan to high" % (self.state.stove))
+            self.set_relay1(True)
+            self.set_relay2(True)
             self.state.stove_fan = True
         
         
