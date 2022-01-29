@@ -34,6 +34,8 @@ import logging.handlers
 
 #main loop interval, in min
 POLL_INTERVAL = 1
+#time to wait for refresh following relay change in sec
+RELAY_CHANGE_WAIT_INTERVAL = 3
 THERMOCOUPLE_DEV = "3b-0d800cc77eec"
 
 LOGFILE_CURRENT = "/dev/shm/stovepi_current.json"
@@ -118,7 +120,7 @@ class global_state:
         self.downstairs = None
         self.hvac = None
         
-        self.stove_fan = True
+        self.stove_fan = firmduino.STOVE_FAN_LEVEL_MED
         self.fan_pause = 0
         
         self.alarm_pause = 0
@@ -174,7 +176,12 @@ def main():
         #date is date of last thermocouple update
         state.date = datetime.datetime.now().isoformat()
                 
+        last_stove_fan_state = state.stove_fan
         fduino.update_fans()
+        
+        if state.stove_fan != last_stove_fan_state:
+            #wait for interference from relay changes before refreshing screen
+            time.sleep(3)
                         
         display.output_temp()
         write_log(state)

@@ -25,9 +25,9 @@ PWM2_PIN = 3
 
 #house
 PWM2_OFF = 0
-PWM2_LOW = .15
-PWM2_MED = .3
-PWM2_HIGH = .45
+PWM2_LOW = .1
+PWM2_MED = .4
+PWM2_HIGH = .6
 
 #bedroom
 PWM1_OFF = 0
@@ -36,15 +36,16 @@ PWM1_MED = .1
 PWM1_HIGH = .2
 #PWM2_HIGH = .24
 
-TEMP_STOVE_FAN_ON = 460
-TEMP_STOVE_FAN_OFF = 400
-TEMP_STOVE_FAN_ON_HIGH = 500
+TEMP_FANS_ON_LOW = 300
+TEMP_FANS_OFF_MED = 420
+#also low temp for high setting
+TEMP_FANS_ON_MED = 460
+TEMP_FANS_ON_HIGH = 500
 
-TEMP_FANS_ON_LOW = 0
-TEMP_FANS_ON_MED = 400
-TEMP_FANS_ON_HIGH = 600
-
-
+STOVE_FAN_LEVEL_OFF = "off"
+STOVE_FAN_LEVEL_LOW = "off"
+STOVE_FAN_LEVEL_MED = "on"
+STOVE_FAN_LEVEL_HIGH = "high"
 
 ANALOG_PIN = 4
 
@@ -127,9 +128,39 @@ class firmduino:
     
 
     def set_fans_off(self):
+        #stove fans off, room fans on low
         self.set_relay1(True)
         self.set_relay2(False)
-        self.state.stove_fan = False
+        self.state.stove_fan = STOVE_FAN_LEVEL_OFF
+        self.set_pwm1(PWM1_OFF)
+        self.set_pwm2(PWM2_OFF)
+    
+    def set_fans_low(self):
+        #stove fans off, room fans on low
+        self.set_relay1(True)
+        self.set_relay2(False)
+        self.state.stove_fan = STOVE_FAN_LEVEL_LOW
+        self.set_pwm1(PWM1_LOW)
+        self.set_pwm2(PWM2_LOW)
+        
+    
+    def set_fans_med(self):
+        #all fans on med
+        self.set_relay1(False)
+        self.set_relay2(False)
+        self.state.stove_fan = STOVE_FAN_LEVEL_MED
+        self.set_pwm1(PWM1_MED)
+        self.set_pwm2(PWM2_MED)
+        
+    
+    def set_fans_high(self):
+        #all fans on high
+        self.set_relay1(True)
+        self.set_relay2(True)
+        self.state.stove_fan = STOVE_FAN_LEVEL_HIGH
+        self.set_pwm1(PWM1_HIGH)
+        self.set_pwm2(PWM2_HIGH)
+    
     
     '''
     update fan control
@@ -139,50 +170,30 @@ class firmduino:
             #off
             self.set_fans_off()
         elif self.state.stove > 0:
-            if self.state.stove > TEMP_STOVE_FAN_ON:
-                if self.state.stove > TEMP_STOVE_FAN_ON_HIGH:
-                    #High Temp
-                    self.set_relay1(True)
-                    self.set_relay2(True)
-                    self.state.stove_fan = True
+            if self.state.stove > TEMP_FANS_ON_HIGH:
+                self.set_fans_high()
+            
+            if self.state.stove > TEMP_FANS_ON_MED and self.state.stove <= TEMP_FANS_ON_HIGH:
+                if self.state.stove_fan == STOVE_FAN_LEVEL_HIGH:
+                    self.set_fans_high()
                 else:
-                    #Med Temp
-                    self.set_relay1(False)
-                    self.set_relay2(False)
-                    self.state.stove_fan = True
-            if self.state.stove < TEMP_STOVE_FAN_OFF:
-                #Low Temp
-                self.set_relay1(True)
-                self.set_relay2(False)
-                self.state.stove_fan = False
+                    self.set_fans_med()
+            
+            if self.state.stove > TEMP_FANS_OFF_MED and self.state.stove <= TEMP_FANS_ON_MED:
+                if self.state.stove_fan == STOVE_FAN_LEVEL_MED:
+                    self.set_fans_med()
+                else:
+                    self.set_fans_low()
+            
+            if self.state.stove > TEMP_FANS_ON_LOW and self.state.stove <= TEMP_FANS_OFF_MED:
+                self.set_fans_low()
+
+            if self.state.stove <= TEMP_FANS_ON_LOW:
+                self.set_fans_off()
+
         else:
             self.logger.error("Stove temp of %i invalid, setting fan to high" % (self.state.stove))
-            self.set_relay1(True)
-            self.set_relay2(True)
-            self.state.stove_fan = True
-        
-        
-        
-        if self.state.fan_pause > 0:
-            self.set_pwm1(PWM1_OFF)
-            self.set_pwm2(PWM2_OFF)
-        else:
-            if self.state.stove > TEMP_FANS_ON_LOW:
-                if self.state.stove > TEMP_FANS_ON_MED:
-                    if self.state.stove > TEMP_FANS_ON_HIGH:
-                        self.set_pwm1(PWM1_HIGH)
-                        self.set_pwm2(PWM2_HIGH)
-                    else:
-                        self.set_pwm1(PWM1_MED)
-                        self.set_pwm2(PWM2_MED)
-                else:
-                    self.set_pwm1(PWM1_LOW)
-                    self.set_pwm2(PWM2_LOW)
-            else:
-                self.set_pwm1(PWM1_OFF)
-                self.set_pwm2(PWM2_OFF)
-        
-       
+            self.set_fans_high()
         
 def main():
     fduino = firmduino(None)

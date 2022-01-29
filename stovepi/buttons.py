@@ -51,9 +51,11 @@ class buttons:
                 
     
     def button1_action(self):
+        #disabled
         #self.state.fan_pause += FAN_PAUSE_MIN
-        self.fduino.update_fans()
-        self.display.output_temp()
+        #self.fduino.update_fans()
+        #self.display.output_temp()
+        pass
         
     
     def button2_action(self):

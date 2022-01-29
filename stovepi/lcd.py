@@ -15,6 +15,7 @@ import sys
 import os
 import subprocess
 import logging
+import firmduino
 
 lcd_rs = digitalio.DigitalInOut(board.D16)
 lcd_en = digitalio.DigitalInOut(board.D12)
@@ -110,13 +111,16 @@ class lcd:
         
         
         
-        if self.state.stove_fan:
-            line2 += " ON "
-        else:
+        if self.state.stove_fan == firmduino.STOVE_FAN_LEVEL_OFF:
             if self.state.fan_pause > 0:
                 line2 += " P%02i" % (self.state.fan_pause)
             else:
                 line2 += " off"
+        else:
+            if self.state.stove_fan == firmduino.STOVE_FAN_LEVEL_HIGH:
+                line2 += " hi "
+            else:
+                line2 += " ON "
             
         line2 += "%3s" % self.state.stovepi
         

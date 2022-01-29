@@ -16,7 +16,8 @@ BEEP_DUTY = 5
 BEEP_LEN = .1
 ALARM_DUTY = 100
 
-TEMP_ALARM_THRESHOLD = 700
+TEMP_ALARM_THRESHOLD = 600
+AIRQUALITY_ALARM_THRESHOLD = .5
 
 class alarm:
     
@@ -26,7 +27,7 @@ class alarm:
         self.pwm = GPIO.PWM(PIN_PWM, PWM_FREQ)
         
     def update_alarm():
-        if self.state.stove > TEMP_ALARM_THRESHOLD:
+        if self.state.stove > TEMP_ALARM_THRESHOLD or self.state.air_quality > AIRQUALITY_ALARM_THRESHOLD:
             if self.state.alarm_pause > 0:
                 self.alarm_stop()
             else:
