@@ -25,14 +25,14 @@ PWM2_PIN = 3
 
 #house
 PWM2_OFF = 0
-PWM2_LOW = .1
+PWM2_LOW = .2
 PWM2_MED = .4
 PWM2_HIGH = .6
 
 #bedroom
 PWM1_OFF = 0
-PWM1_LOW = 0
-PWM1_MED = .1
+PWM1_LOW = .1
+PWM1_MED = .15
 PWM1_HIGH = .2
 #PWM2_HIGH = .24
 
@@ -180,7 +180,7 @@ class firmduino:
                     self.set_fans_med()
             
             if self.state.stove > TEMP_FANS_OFF_MED and self.state.stove <= TEMP_FANS_ON_MED:
-                if self.state.stove_fan == STOVE_FAN_LEVEL_MED:
+                if self.state.stove_fan == STOVE_FAN_LEVEL_MED or self.state.stove_fan == STOVE_FAN_LEVEL_HIGH:
                     self.set_fans_med()
                 else:
                     self.set_fans_low()
